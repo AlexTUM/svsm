@@ -4,6 +4,7 @@
 //
 // Author: Dov Murik <dovmurik@linux.ibm.com>
 
+pub mod check;
 pub mod core;
 pub mod errors;
 #[cfg(all(feature = "mstpm", not(test)))]
@@ -14,6 +15,7 @@ use cpuarch::vmsa::{GuestVMExit, VMSA};
 // SVSM protocols
 pub const SVSM_CORE_PROTOCOL: u32 = 0;
 pub const SVSM_VTPM_PROTOCOL: u32 = 2;
+pub const SVSM_CHECK_KERNEL: u32 = 3;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RequestParams {
