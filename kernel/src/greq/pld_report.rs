@@ -111,6 +111,10 @@ impl SnpReportResponse {
 
         Ok(())
     }
+
+    pub fn get_att_report(&self) -> AttestationReport {
+        self.report
+    }
 }
 
 /// The `TCB_VERSION` contains the security version numbers of each
