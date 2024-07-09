@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use log::debug;
+use log::{debug, info, error};
 
 use crate::address::{Address, PhysAddr, VirtAddr};
 use crate::cpu::percpu::current_ghcb;
@@ -61,12 +61,16 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     let page_addr = PhysAddr::from(params.rcx);
 
     if !page_addr.is_aligned(page_size_bytes) {
+        log::error!("page not aligned");
         return Err(SvsmReqError::invalid_parameter());
     }
 
     if !valid_phys_address(page_addr) || !valid_phys_address(res_addr) {
+        log::error!("address not valid");
         return Err(SvsmReqError::invalid_address());
     }
+
+    log::info!("Received params:\n rcx: {}\n rdx: {}\n r8: {}\n r9: {}\n", page_addr, params.rdx, res_addr, res_size);
 
     let page_guard =
         PerCPUPageMappingGuard::create(page_addr, page_addr + page_size_bytes, valign)?;
@@ -80,12 +84,13 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
         let cur_byte = match guest_page.offset(index).read() {
             Ok(v) => v,
             Err(e) => {
-                log::debug!("error hashing");
+                log::error!("error hashing");
                 break;
             }
         };
         hash = hash_some(hash, cur_byte);
     }
+    log::info!("Hashed page: {}", hash);
 
     let mut exchange_buffer = [0u8; REPORT_RESPONSE_SIZE];
 
@@ -96,7 +101,7 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     for index in 0..rep_data.len() {
         exchange_buffer[index] = rep_data[index];
     }
-
+    
     // VMPL is supposed to be 0, KEY_SEL is supposed to be 0
     // Thus, after the report data, nothing needs to be set
 
