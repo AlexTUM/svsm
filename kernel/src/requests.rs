@@ -3,7 +3,7 @@
 // Copyright (c) 2022-2023 SUSE LLC
 //
 // Author: Joerg Roedel <jroedel@suse.de>
-
+use log::{debug, info, error};
 use crate::cpu::flush_tlb_global_sync;
 use crate::cpu::percpu::{process_requests, this_cpu, wait_for_requests};
 use crate::error::SvsmError;
@@ -93,7 +93,7 @@ fn request_loop_once(
     if !matches!(params.guest_exit_code, GuestVMExit::VMGEXIT) {
         return Ok(false);
     }
-
+    log::info!("got request for protocol {}", protocol); 
     match protocol {
         SVSM_CORE_PROTOCOL => core_protocol_request(request, params).map(|_| true),
         #[cfg(all(feature = "mstpm", not(test)))]
@@ -161,6 +161,7 @@ pub fn request_loop() {
             ((rax >> 32) as u32, (rax & 0xffff_ffff) as u32)
         };
 
+        log::info!("got request in loop: {} {}", protocol, request);
         match check_requests() {
             Ok(pending) => {
                 if pending {
