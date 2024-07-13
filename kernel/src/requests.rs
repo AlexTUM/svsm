@@ -117,7 +117,9 @@ fn check_requests() -> Result<bool, SvsmReqError> {
 }
 
 pub fn request_loop() {
+    log::info!("in request loop now");
     loop {
+        log::info!("new loop iteration");
         // Determine whether the guest is runnable.  If not, halt and wait for
         // the guest to execute.  When halting, assume that the hypervisor
         // will schedule the guest VMPL on its own.
@@ -145,6 +147,7 @@ pub fn request_loop() {
                 }
             }
         }
+        log::info!("got guest request");
 
         // Obtain a reference to the VMSA just long enough to extract the
         // request parameters.

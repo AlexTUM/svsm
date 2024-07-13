@@ -44,6 +44,7 @@ fn check_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
 }
 
 fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
+    log::warn!("entering attest_hash_single");
     let (page_size_bytes, valign) = match params.rdx & 3 {
         0 => (PAGE_SIZE, VIRT_ALIGN_4K),
         1 => (PAGE_SIZE_2M, VIRT_ALIGN_2M),
@@ -65,9 +66,12 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
         return Err(SvsmReqError::invalid_parameter());
     }
 
-    if !valid_phys_address(page_addr) || !valid_phys_address(res_addr) {
-        log::error!("address not valid");
+    if !valid_phys_address(page_addr) {
+        log::error!("page address not valid: {:?}", page_addr);
         return Err(SvsmReqError::invalid_address());
+    }
+    if !valid_phys_address(res_addr) {
+        log::error!("result not valid addr {:?}", res_addr);
     }
 
     log::info!("Received params:\n rcx: {}\n rdx: {}\n r8: {}\n r9: {}\n", page_addr, params.rdx, res_addr, res_size);

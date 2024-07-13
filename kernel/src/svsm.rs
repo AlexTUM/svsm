@@ -358,7 +358,7 @@ pub extern "C" fn svsm_start(li: &KernelLaunchInfo, vb_addr: usize) {
     init_console(&*CONSOLE_SERIAL).expect("Console writer already initialized");
     install_console_logger("SVSM").expect("Console logger already initialized");
 
-    log::info!("COCONUT Secure Virtual Machine Service Module (SVSM)");
+    log::info!("COCONUT Secure Virtual Machine Service Module (SVSM) main");
 
     dump_cpuid_table();
     platform.env_setup_late();
@@ -465,7 +465,7 @@ pub extern "C" fn svsm_main() {
     if exec_user("/init").is_err() {
         log::info!("Failed to launch /init");
     }
-
+    log::info!("starting request loop");
     request_loop();
 
     panic!("Road ends here!");
