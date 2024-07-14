@@ -18,6 +18,8 @@ use crate::sev::ghcb::switch_to_vmpl;
 use crate::types::{PageSize, PAGE_SIZE, PAGE_SIZE_2M};
 use core::mem::size_of;
 
+//use hmac_sha512::Hash;
+use hmac_sha512;
 const SVSM_CHECK_SINGLE: u32 = 0;
 const SVSM_HASH_SINGLE: u32 = 1;
 
@@ -26,6 +28,13 @@ const ATTESTATION_SIZE: usize = size_of::<AttestationReport>();
 fn hash_some(prev: u64, val: u8) -> u64 {
     let magic: u64 = 37;
     (prev + val as u64) % magic
+}
+
+fn hash_range(ptr: &GuestPtr::<u8>, len: usize) {
+    let mut hash_val: [u8; 64] = [0; 64];
+
+    let range_slice = unsafe {ptr.slice_range(len)};
+   // hash_val = Hash::hash(len);
 }
 
 fn check_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {

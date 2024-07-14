@@ -9,6 +9,7 @@ use crate::error::SvsmError;
 
 use core::arch::asm;
 use core::mem::{size_of, MaybeUninit};
+use core::slice::from_raw_parts;
 
 #[allow(dead_code)]
 #[inline]
@@ -217,6 +218,12 @@ impl<T: Copy> GuestPtr<T> {
     #[inline]
     pub fn offset(&self, count: isize) -> Self {
         GuestPtr::from_ptr(self.ptr.wrapping_offset(count))
+    }
+    
+    // unsafe bc len can be arbitrary
+    #[inline]
+    pub unsafe fn slice_range<'a>(&self, len: usize) -> &'a [T] {
+         from_raw_parts((self.ptr as *const T), len)     
     }
 }
 
