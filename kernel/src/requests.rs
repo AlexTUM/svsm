@@ -93,7 +93,7 @@ fn request_loop_once(
     if !matches!(params.guest_exit_code, GuestVMExit::VMGEXIT) {
         return Ok(false);
     }
-    log::info!("got request for protocol {}", protocol); 
+    //log::info!("got request for protocol {}", protocol); 
     match protocol {
         SVSM_CORE_PROTOCOL => core_protocol_request(request, params).map(|_| true),
         #[cfg(all(feature = "mstpm", not(test)))]
@@ -117,9 +117,9 @@ fn check_requests() -> Result<bool, SvsmReqError> {
 }
 
 pub fn request_loop() {
-    log::info!("in request loop now");
+    //1log::info!("in request loop now");
     loop {
-        log::info!("new loop iteration");
+        //log::info!("new loop iteration");
         // Determine whether the guest is runnable.  If not, halt and wait for
         // the guest to execute.  When halting, assume that the hypervisor
         // will schedule the guest VMPL on its own.
@@ -147,7 +147,7 @@ pub fn request_loop() {
                 }
             }
         }
-        log::info!("got guest request");
+        //log::info!("got guest request");
 
         // Obtain a reference to the VMSA just long enough to extract the
         // request parameters.
@@ -164,7 +164,7 @@ pub fn request_loop() {
             ((rax >> 32) as u32, (rax & 0xffff_ffff) as u32)
         };
 
-        log::info!("got request in loop: {} {}", protocol, request);
+        //log::info!("got request in loop: {} {}", protocol, request);
         match check_requests() {
             Ok(pending) => {
                 if pending {

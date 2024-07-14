@@ -75,7 +75,7 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     }
 
     log::info!("Received params:\n rcx: {}\n rdx: {}\n r8: {}\n r9: {}\n", page_addr, params.rdx, res_addr, res_size);
-
+    
     let page_guard =
         PerCPUPageMappingGuard::create(page_addr, page_addr + page_size_bytes, valign)?;
     let page_vaddr = page_guard.virt_addr();
@@ -97,7 +97,7 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     log::info!("Hashed page: {}", hash);
 
     let mut exchange_buffer = [0u8; REPORT_RESPONSE_SIZE];
-
+    
     let rep_data = hash.to_be_bytes();
     if rep_data.len() > USER_DATA_SIZE {
         return Err(SvsmReqError::invalid_parameter());
@@ -105,6 +105,9 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     for index in 0..rep_data.len() {
         exchange_buffer[index] = rep_data[index];
     }
+
+    let res_paddr = res_addr.page_align();
+    let res_offset = res_addr.page_offset();
     
     // VMPL is supposed to be 0, KEY_SEL is supposed to be 0
     // Thus, after the report data, nothing needs to be set
@@ -114,9 +117,9 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
         let att_report = response.get_att_report();
         // get the whole page but only use the allocated buffer from the guest OS
         let res_guard =
-            PerCPUPageMappingGuard::create(res_addr, res_addr + page_size_bytes, valign)?;
+            PerCPUPageMappingGuard::create(res_paddr, res_paddr + page_size_bytes, valign)?;
         let res_vaddr = res_guard.virt_addr();
-        let res_ptr = GuestPtr::<AttestationReport>::new(res_vaddr);
+        let res_ptr = GuestPtr::<AttestationReport>::new(res_vaddr.const_add(res_offset));
         res_ptr.write(att_report)?;
     } else {
         return Err(SvsmReqError::invalid_request());
