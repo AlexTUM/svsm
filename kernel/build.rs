@@ -21,6 +21,8 @@ fn main() {
     println!("cargo:rustc-link-lib=static=my_crypto");
     //println!("cargo:rustc-link-search=libmy_rsa");
     println!("cargo:rustc-link-search=libmy_crypto");
+    println!("cargo:rustc-link-lib=static=stream_hash");
+    println!("cargo:rustc-link-search=libstream_hash");
     if std::env::var("CARGO_FEATURE_MSTPM").is_ok()
         && std::env::var("CARGO_FEATURE_DEFAULT_TEST").is_err()
     {

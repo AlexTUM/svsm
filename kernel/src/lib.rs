@@ -42,6 +42,7 @@ pub mod types;
 pub mod utils;
 #[cfg(all(feature = "mstpm", not(test)))]
 pub mod vtpm;
+pub mod stream_hash_wrapper;
 
 #[test]
 fn test_nop() {}
