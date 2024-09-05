@@ -5,7 +5,7 @@ const HASH_DIGEST_LENGTH: usize = 64;
 
 // like digest_t
 #[repr(C)]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 #[derive(Copy, Clone)]
 pub struct HashDigest
 {
@@ -14,8 +14,8 @@ pub struct HashDigest
 }
 
 impl  HashDigest {
-    pub const fn new() -> digest_t{
-        digest_t {
+    pub const fn new() -> HashDigest{
+        HashDigest {
             digest: [0;HASH_DIGEST_LENGTH],
             size: HASH_DIGEST_LENGTH as u32,
         }
@@ -23,12 +23,16 @@ impl  HashDigest {
 }
 
 #[repr(C)]
+#[derive(Debug)]
+#[derive(Clone)]
 struct HashBuf {
     fst: u8,
     snd: *const u64,
 }
 
 #[repr(C)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct HashState {
     block_state: HashBuf,
     buf: *const u8,
@@ -40,7 +44,7 @@ extern "C" {
     // fn _free_digest(digest: *mut HashDigest) -> (); 
     fn _hash_init() -> *mut HashState;
     fn _hash_update(state: *const HashState, chunk: *mut u8, chunk_len: u32) -> u32;
-    fn _hash_finish(state: *const HashState, output: *mut HashDigest);
+    fn _hash_finish(state: *const HashState, output: *mut HashDigest) -> u32;
 }
 
 // ************ safe API ********

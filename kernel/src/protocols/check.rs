@@ -18,8 +18,7 @@ use crate::sev::ghcb::switch_to_vmpl;
 use crate::types::{PageSize, PAGE_SIZE, PAGE_SIZE_2M};
 use core::mem::size_of;
 
-//use hmac_sha512::Hash;
-use hmac_sha512;
+use crate::stream_hash_wrapper; 
 const SVSM_CHECK_SINGLE: u32 = 0;
 const SVSM_HASH_SINGLE: u32 = 1;
 
