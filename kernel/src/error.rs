@@ -26,6 +26,7 @@ use crate::sev::ghcb::GhcbError;
 use crate::sev::msr_protocol::GhcbMsrError;
 use crate::sev::SevSnpError;
 use crate::task::TaskError;
+use crate::stream_hash_wrapper::StreamError;
 
 /// A generic error during SVSM operation.
 #[derive(Clone, Copy, Debug)]
@@ -64,4 +65,6 @@ pub enum SvsmError {
     Task(TaskError),
     /// Errors from #VC handler
     Vc(VcError),
+    /// Errors from Hacl stream interface
+    Stream(StreamError),
 }
