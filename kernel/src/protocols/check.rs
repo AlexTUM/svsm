@@ -18,23 +18,24 @@ use crate::sev::ghcb::switch_to_vmpl;
 use crate::types::{PageSize, PAGE_SIZE, PAGE_SIZE_2M};
 use core::mem::size_of;
 
-use crate::stream_hash_wrapper; 
+use crate::stream_hash_wrapper::{HashState, HashDigest}; 
+
 const SVSM_CHECK_SINGLE: u32 = 0;
 const SVSM_HASH_SINGLE: u32 = 1;
 
 const ATTESTATION_SIZE: usize = size_of::<AttestationReport>();
 
-fn hash_some(prev: u64, val: u8) -> u64 {
-    let magic: u64 = 37;
-    (prev + val as u64) % magic
-}
+// fn hash_some(prev: u64, val: u8) -> u64 {
+//     let magic: u64 = 37;
+//     (prev + val as u64) % magic
+// }
 
-fn hash_range(ptr: &GuestPtr::<u8>, len: usize) {
-    let mut hash_val: [u8; 64] = [0; 64];
-
-    let range_slice = unsafe {ptr.slice_range(len)};
-   // hash_val = Hash::hash(len);
-}
+// fn hash_range(ptr: &GuestPtr::<u8>, len: usize) {
+//     let mut hash_val: [u8; 64] = [0; 64];
+//
+//     let range_slice = unsafe {ptr.slice_range(len)};
+//    // hash_val = Hash::hash(len);
+// }
 
 fn check_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     let gpa = PhysAddr::from(params.rcx);
@@ -64,6 +65,7 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     assert!(REPORT_REQUEST_SIZE < REPORT_RESPONSE_SIZE);
     let res_size = params.r9;
     if (res_size as usize) < ATTESTATION_SIZE {
+        log::error!("not enough space for report");
         return Err(SvsmReqError::invalid_parameter());
     }
 
@@ -79,7 +81,8 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
         return Err(SvsmReqError::invalid_address());
     }
     if !valid_phys_address(res_addr) {
-        log::error!("result not valid addr {:?}", res_addr);
+        log::error!("result addr not valid: {:?}", res_addr);
+        return Err(SvsmReqError::invalid_parameter());
     }
 
     log::info!("Received params:\n rcx: {}\n rdx: {}\n r8: {}\n r9: {}\n", page_addr, params.rdx, res_addr, res_size);
@@ -87,31 +90,24 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     let page_guard =
         PerCPUPageMappingGuard::create(page_addr, page_addr + page_size_bytes, valign)?;
     let page_vaddr = page_guard.virt_addr();
-    let guest_page = GuestPtr::<u8>::new(page_vaddr);
+    // let guest_page = GuestPtr::<u8>::new(page_vaddr);
 
-    //TODO use better hash
-    let mut hash = 0;
-    for i in 0..page_size_bytes {
-        let index = i as isize;
-        let cur_byte = match guest_page.offset(index).read() {
-            Ok(v) => v,
-            Err(e) => {
-                log::error!("error hashing");
-                break;
-            }
-        };
-        hash = hash_some(hash, cur_byte);
-    }
-    log::info!("Hashed page: {}", hash);
+    let mut digest = HashDigest::new();
+    let mut page_slice = unsafe { page_vaddr.to_slice::<u8>(page_size_bytes) };
+
+    let hasher = HashState::hash_init();
+    hasher.hash_update_slice(&mut page_slice);
+    hasher.hash_finish(&mut digest);
+    
+    log::info!("Hashed page: {}", digest.digest);
 
     let mut exchange_buffer = [0u8; REPORT_RESPONSE_SIZE];
     
-    let rep_data = hash.to_be_bytes();
-    if rep_data.len() > USER_DATA_SIZE {
+    if digest.size > USER_DATA_SIZE {
         return Err(SvsmReqError::invalid_parameter());
     }
-    for index in 0..rep_data.len() {
-        exchange_buffer[index] = rep_data[index];
+    for index in 0..digest.size {
+        exchange_buffer[index] = digest.digest[index];
     }
 
     let res_paddr = res_addr.page_align();
