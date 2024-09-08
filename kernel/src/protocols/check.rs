@@ -96,10 +96,10 @@ fn attest_hash_single(params: &mut RequestParams) -> Result<(), SvsmReqError> {
     let mut page_slice = unsafe { page_vaddr.to_slice::<u8>(page_size_bytes) };
 
     let hasher = HashState::hash_init();
-    hasher.hash_update_slice(&mut page_slice);
-    hasher.hash_finish(&mut digest);
+    hasher.hash_update_slice(&mut page_slice)?;
+    hasher.hash_finish(&mut digest)?;
     
-    log::info!("Hashed page: {}", digest.digest);
+    log::info!("Hashed page: {:?}", digest.digest);
 
     let mut exchange_buffer = [0u8; REPORT_RESPONSE_SIZE];
     

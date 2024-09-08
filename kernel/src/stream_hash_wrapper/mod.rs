@@ -71,9 +71,9 @@ fn result_from_code(err_code: u32) -> Result<(), StreamError> {
 extern "C" {
     // fn _alloc_digest() -> *mut digest_t;
     // fn _free_digest(digest: *mut HashDigest) -> ();
-    fn _hash_init() -> *mut HashState;
-    fn _hash_update(state: *const HashState, chunk: *mut u8, chunk_len: u32) -> u32;
-    fn _hash_finish(state: *const HashState, output: *mut HashDigest) -> u32;
+    fn hash_init() -> *mut HashState;
+    fn hash_update(state: *const HashState, chunk: *const u8, chunk_len: u32) -> u32;
+    fn hash_finish(state: *const HashState, output: *mut HashDigest) -> u32;
 }
 
 // ************ safe API ********
@@ -81,34 +81,37 @@ extern "C" {
 impl HashState {
     pub fn hash_init() -> Box<Self> {
         let state_safe = unsafe {
-            let state_ptr = _hash_init();
+            let state_ptr = hash_init();
             Box::from_raw(state_ptr)
         };
         return state_safe;
     }
 
     pub fn hash_update_u64(&self, value: u64) -> Result<(), SvsmError> {
-        let chunk = &mut value.to_ne_bytes() as *mut u8;
+        let chunk = &value.to_ne_bytes() as *const u8;
         let raw_state = self as *const HashState;
 
-        let err_code = unsafe { _hash_update(raw_state, chunk, 8) };
-        return result_from_code(err_code);
+        let err_code = unsafe { hash_update(raw_state, chunk, 8) };
+        result_from_code(err_code)?;
+        Ok(())
     }
 
     pub fn hash_update_u8(&self, value: u8) -> Result<(), SvsmError> {
-        let chunk = &mut value.to_ne_bytes() as *mut u8;
+        let chunk = &value.to_ne_bytes() as *const u8;
         let raw_state = self as *const HashState;
 
-        let err_code = unsafe { _hash_update(raw_state, chunk, 1) };
-        return result_from_code(err_code);
+        let err_code = unsafe { hash_update(raw_state, chunk, 1) };
+        result_from_code(err_code)?;
+        Ok(())
     }
 
-    pub fn hash_update_slice(&self, sl: &mut [u8]) -> Result<(), SvsmError> {
-        let chunk = sl.as_mut_ptr();
+    pub fn hash_update_slice(&self, sl: &[u8]) -> Result<(), SvsmError> {
+        let chunk = sl.as_ptr();
         let raw_state = self as *const HashState;
 
-        let err_code = unsafe { _hash_update(raw_state, chunk, sl.len()) };
-        return result_from_code(err_code);
+        let err_code = unsafe { hash_update(raw_state, chunk, sl.len() as u32) };
+        result_from_code(err_code)?;
+        Ok(())
     }
 
     pub fn hash_finish(self, output: &mut HashDigest) -> Result<(), SvsmError> {
@@ -116,7 +119,8 @@ impl HashState {
         let raw_digest = output as *mut HashDigest;
         // _hash_finish will free the state memory; HashState needs to be dropped,
         // thus state param as no reference
-        let err_code = unsafe { _hash_finish(raw_state, raw_digest) };
-        return result_from_code(err_code);
+        let err_code = unsafe { hash_finish(raw_state, raw_digest) };
+        result_from_code(err_code)?;
+        Ok(())
     }
 }
